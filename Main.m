@@ -49,7 +49,13 @@ if(isequal(app_check_version,'updated'))
 end
 
  %% Process selected dataset and compute the leadfield subjects
+ if(isfolder(app_properties.BCV_work_dir))
  selected_datastructure_process(app_properties);
+ else
+     fprintf(2,'\n ->> Error: The BC_VARETA_work_dir folder don''t exist\n');
+     disp("");
+     fprintf(2,char(app_properties.BCV_work_dir));
+ end
  
  
     
