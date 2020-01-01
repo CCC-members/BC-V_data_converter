@@ -15,32 +15,17 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                         subject = protocol.ProtocolSubjects.Subject(j);
                         CortexFile = fullfile(protocol_anat_path, subject.Surface(subject.iCortex).FileName);
                         ScalpFile =  fullfile(protocol_anat_path,subject.Surface(subject.iScalp).FileName);
-%                         InnerSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iInnerSkull).FileName);
-%                         OuterSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iOuterSkull).FileName);
+                        InnerSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iInnerSkull).FileName);
+                        OuterSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iOuterSkull).FileName);
                         for k=1: length(protocol.ProtocolStudies.Study)
                             study = protocol.ProtocolStudies.Study(k);
-                            if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.Channel))
-                                ChannelsFile = fullfile(protocol_data_path,study.Channel.FileName);
-                                BSTHeadModelFiles = dir(fullfile(protocol_data_path,fileparts(study.FileName),'headmodel_surf_openmeeg*.mat'));
-                                [~,idx] = sort([BSTHeadModelFiles.datenum]);
-                                BSTHeadModelFile = BSTHeadModelFiles(idx(end));
-                                HeadModelFile = fullfile(BSTHeadModelFile.folder,BSTHeadModelFile.name);
+                            if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))
+                                ChannelsFile = fullfile(protocol_data_path,study.Channel(study.iChannel).FileName);
+                                HeadModelFile = fullfile(protocol_data_path,study.HeadModel(study.iHeadModel).FileName);
+                                modality = char(study.Channel.Modalities);
                                 break;
                             end
-                        end
-                        disp(strcat("Saving BC-VARETA structure. Subject: ",subject.Name)); 
-                        output_subject_dir = fullfile( app_properties.BCV_work_dir,subject.Name);
-                        eeg_dir = fullfile(output_subject_dir,'eeg');
-                        leadfield_dir = fullfile(output_subject_dir,'leadfield');
-                        surf_dir = fullfile(output_subject_dir,'surf');
-                        scalp_dir = fullfile(output_subject_dir,'scalp');
-                        if(~isfolder(output_subject_dir))
-                            mkdir(output_subject_dir);
-                            mkdir(eeg_dir);
-                            mkdir(leadfield_dir);
-                            mkdir(surf_dir);
-                            mkdir(scalp_dir);
-                        end                        
+                        end                       
                         HeadModel = load(HeadModelFile);                                                
                         Ke = HeadModel.Gain;
                         GridOrient = HeadModel.GridOrient;
@@ -52,11 +37,27 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                         
                         Sh = load(ScalpFile);
                         
+                        Sinn = load(InnerSkullFile);
+                        Sout = load(OuterSkullFile);
+                        
+                        disp(strcat("Saving BC-VARETA structure. Subject: ",subject.Name));
+                        [output_subject_dir] = create_data_structure(app_properties.BCV_work_dir,subject.Name,modality);
+                        
+                        subject_info = struct;
+                        if(isfolder(output_subject_dir))
+                            subject_info.leadfield_dir = fullfile('leadfield','leadfield.mat');
+                            subject_info.surf_dir = fullfile('surf','surf.mat');
+                            subject_info.scalp_dir = fullfile('scalp','scalp.mat');
+                            subject_info.innerskull_dir = fullfile('scalp','innerskull.mat');
+                            subject_info.outerskull_dir = fullfile('scalp','outerskull.mat');
+                            subject_info.modality = modality;
+                        end
+                        
                         if(isfield(selected_data_format, 'preprocessed_eeg'))
-                            if(~isequal(selected_data_format.preprocessed_eeg.path,'none'))
-                                [filepath,name,ext]= fileparts(selected_data_format.preprocessed_eeg.file_location);
-                                file_name = strrep(name,'SubID',subject.Name);
-                                eeg_file = fullfile(selected_data_format.preprocessed_eeg.path,subject.Name,filepath,[file_name,ext]);
+                            if(~isequal(selected_data_format.preprocessed_eeg.base_path,'none'))
+                                filepath = strrep(selected_data_format.preprocessed_eeg.file_location,'SubID',subject.Name);
+                                base_path =  strrep(selected_data_format.preprocessed_eeg.base_path,'SubID',subject.Name);
+                                eeg_file = fullfile(base_path,filepath);
                                 if(isfile(eeg_file))
                                     disp ("-->> Genering eeg file");
                                     [hdr, data] = import_eeg_format(eeg_file,selected_data_format.preprocessed_eeg.format);
@@ -66,27 +67,29 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                                     [Ceeg,Ke] = remove_channels_and_leadfield_from_layout(labels,Ceeg,Ke);                                  
                                     disp ("-->> Sorting Channels and LeadField by preprocessed EEG");
                                     [Ceeg,Ke] = sort_channels_and_leadfield_by_labels(labels,Ceeg,Ke);
+                                    
+                                    subject_info.eeg_dir = fullfile('eeg','eeg.mat');
+                                    subject_info.eeg_info_dir = fullfile('eeg','eeg_info.mat');
+                                    disp ("-->> Saving eeg_info file");
+                                    save(fullfile(output_subject_dir,'eeg','eeg_info.mat'),'hdr');
                                     disp ("-->> Saving eeg file");
-                                    eeg_path = fullfile(eeg_dir,'eeg.mat');
-                                    save(eeg_path,'data');  
+                                    save(fullfile(output_subject_dir,'eeg','eeg.mat'),'data');
                                 end
                             end
                         end
                         
-                        leadfield_path = fullfile(leadfield_dir,'leadfield.mat');
-                        surf_path = fullfile(surf_dir,'surf.mat');
-                        scalp_path = fullfile(scalp_dir,'scalp.mat');
-                        if(exist(eeg_path))
-                            save(fullfile(output_subject_dir,'subject.mat'),'leadfield_path','surf_path','scalp_path','eeg_path');
-                        else
-                             save(fullfile(output_subject_dir,'subject.mat'),'leadfield_path','surf_path','scalp_path');
-                        end
                         disp ("-->> Saving leadfield file");
-                        save(leadfield_path,'Ke','GridOrient','GridAtlas');
-                        disp ("-->> Saving surface file");
-                        save(surf_path,'Sc');
-                        disp ("-->> Saving Scalp file");
-                        save(scalp_path,'Ceeg','Sh');
+                        save(fullfile(output_subject_dir,'leadfield','leadfield.mat'),'Ke','GridOrient','GridAtlas');
+                        disp ("-->> Saving surf file");
+                        save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc');
+                        disp ("-->> Saving scalp file");
+                        save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Ceeg','Sh');
+                        disp ("-->> Saving inner skull file");
+                        save(fullfile(output_subject_dir,'scalp','innerskull.mat'),'Sinn');
+                        disp ("-->> Saving outer skull file");
+                        save(fullfile(output_subject_dir,'scalp','outerskull.mat'),'Sout');
+                        disp ("-->> Saving subject file");
+                        save(fullfile(output_subject_dir,'subject.mat'),'subject_info');
                     end
                 end
             end
