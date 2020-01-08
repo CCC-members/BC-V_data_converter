@@ -1,12 +1,13 @@
 function selected_datastructure_process(app_properties)
 selected_data_format = app_properties.selected_data_format;
-if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_properties(selected_data_format) )    
+selected_data_format.BCV_work_dir = app_properties.BCV_work_dir;
+if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_properties(selected_data_format) )
     bst_db_path = selected_data_format.bst_db_path;
     if(isfolder(bst_db_path))
         protocols = dir(fullfile(bst_db_path,'**','protocol.mat'));
         if(~isempty(protocols))
             for i = 1: length(protocols)
-                if(~protocols(i).isdir)                    
+                if(~protocols(i).isdir)
                     protocol = load(fullfile(protocols(i).folder,protocols(i).name));
                     protocol_base_path = fileparts(protocols(i).folder);
                     protocol_data_path = protocols(i).folder;
@@ -25,15 +26,15 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                                 modality = char(study.Channel.Modalities);
                                 break;
                             end
-                        end                       
-                        HeadModel = load(HeadModelFile);                                                
+                        end
+                        HeadModel = load(HeadModelFile);
                         Ke = HeadModel.Gain;
                         GridOrient = HeadModel.GridOrient;
                         GridAtlas = HeadModel.GridAtlas;
                         
                         Sc = load(CortexFile);
                         
-                        Ceeg = load(ChannelsFile);
+                        Cdata = load(ChannelsFile);
                         
                         Sh = load(ScalpFile);
                         
@@ -41,7 +42,7 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                         Sout = load(OuterSkullFile);
                         
                         disp(strcat("Saving BC-VARETA structure. Subject: ",subject.Name));
-                        [output_subject_dir] = create_data_structure(app_properties.BCV_work_dir,subject.Name,modality);
+                        [output_subject_dir] = create_data_structure(selected_data_format.BCV_work_dir,subject.Name,modality);
                         
                         subject_info = struct;
                         if(isfolder(output_subject_dir))
@@ -51,6 +52,7 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                             subject_info.innerskull_dir = fullfile('scalp','innerskull.mat');
                             subject_info.outerskull_dir = fullfile('scalp','outerskull.mat');
                             subject_info.modality = modality;
+                            subject_info.name = subject.Name;
                         end
                         
                         if(isfield(selected_data_format, 'preprocessed_eeg'))
@@ -64,9 +66,9 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                                     labels = hdr.label;
                                     labels = strrep(labels,'REF','');
                                     disp ("-->> Removing Channels  by preprocessed EEG");
-                                    [Ceeg,Ke] = remove_channels_and_leadfield_from_layout(labels,Ceeg,Ke);                                  
+                                    [Cdata,Ke] = remove_channels_and_leadfield_from_layout(labels,Cdata,Ke);
                                     disp ("-->> Sorting Channels and LeadField by preprocessed EEG");
-                                    [Ceeg,Ke] = sort_channels_and_leadfield_by_labels(labels,Ceeg,Ke);
+                                    [Cdata,Ke] = sort_channels_and_leadfield_by_labels(labels,Cdata,Ke);
                                     
                                     subject_info.eeg_dir = fullfile('eeg','eeg.mat');
                                     subject_info.eeg_info_dir = fullfile('eeg','eeg_info.mat');
@@ -77,13 +79,12 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
                                 end
                             end
                         end
-                        
                         disp ("-->> Saving leadfield file");
                         save(fullfile(output_subject_dir,'leadfield','leadfield.mat'),'Ke','GridOrient','GridAtlas');
                         disp ("-->> Saving surf file");
                         save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc');
                         disp ("-->> Saving scalp file");
-                        save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Ceeg','Sh');
+                        save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
                         disp ("-->> Saving inner skull file");
                         save(fullfile(output_subject_dir,'scalp','innerskull.mat'),'Sinn');
                         disp ("-->> Saving outer skull file");
@@ -97,7 +98,9 @@ if(isequal(selected_data_format.name,'BrainStorm') && is_checked_datastructure_p
             disp('No one protocol in this foldes:');
             disp('C:\Users\Ariosky\.brainstorm\local_db');
         end
-    end
+    end    
+elseif(isequal(selected_data_format.id,'ipd'))
+    import_preprossed_data(selected_data_format);
 end
 
 disp("-->> Process finished....")

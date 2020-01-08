@@ -58,7 +58,7 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
     %%
     disp ("-->> Genering scalp file");
     BSTChannelsFile = bst_fullfile(ProtocolInfo.STUDIES,subjectSubDir,prefix,'channel.mat');
-    Ceeg = load(BSTChannelsFile);
+    Cdata = load(BSTChannelsFile);
     
     ScalpFile      = sSubject.Surface(sSubject.iScalp).FileName;
     BSTScalpFile = bst_fullfile(ProtocolInfo.SUBJECTS, ScalpFile);
@@ -77,7 +77,7 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
                 [hdr, data] = import_eeg_format(eeg_file,selected_data_set.preprocessed_eeg.format);
                 labels = hdr.label;
                 labels = strrep(labels,'REF','');
-                [Ceeg] = remove_channels_from_layout(labels,Ceeg);
+                [Cdata] = remove_channels_from_layout(labels,Cdata);
                 save(strcat(output_subject,filesep,'eeg',filesep,'eeg.mat'),'data');
             end
         end
@@ -85,7 +85,7 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
     
     save(strcat(output_subject,filesep,'leadfield',filesep,'leadfield.mat'),'Ke','GridOrient','GridAtlas');
     save(strcat(output_subject,filesep,'surf',filesep,'surf.mat'),'Sc');
-    save(strcat(output_subject,filesep,'scalp',filesep,'scalp.mat'),'Ceeg','Sh');
+    save(strcat(output_subject,filesep,'scalp',filesep,'scalp.mat'),'Cdata','Sh');
     
     % waitbar(0.25,process_waitbar,strcat('Genering eeg file for: ' , subject_name ));
     % waitbar(0.5,process_waitbar,strcat('Genering leadfield file for: ' , subject_name ));
