@@ -26,8 +26,19 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
     
     %% Creating subject folder structure
     disp('-->> Creating subject folder structure.');
-    [output_subject] = create_data_structure(bcv_path,sSubject.Name);
+    [output_subject_dir] = create_data_structure(bcv_path,sSubject.Name);
     
+    subject_info = struct;     
+    
+    if(isfolder(output_subject_dir))       
+        subject_info.leadfield_dir = fullfile('leadfield','leadfield.mat');
+        subject_info.surf_dir = fullfile('surf','surf.mat');
+        subject_info.scalp_dir = fullfile('scalp','scalp.mat');
+        subject_info.innerskull_dir = fullfile('scalp','innerskull.mat');
+        subject_info.outerskull_dir = fullfile('scalp','outerskull.mat');
+        subject_info.modality = selected_data_set.modality;
+        subject_info.name = sSubject.Name;
+    end
     %% Uploding Subject file into BrainStorm Protocol
     disp('BST-P ->> Uploding Subject file into BrainStorm Protocol.')
     
@@ -64,6 +75,22 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
     BSTScalpFile = bst_fullfile(ProtocolInfo.SUBJECTS, ScalpFile);
     Sh = load(BSTScalpFile);  
     
+      %%
+    %% Genering inner skull file
+    %%
+    disp ("-->> Genering inner skull file");
+    InnerSkullFile = sSubject.Surface(sSubject.iInnerSkull).FileName;
+    BSTInnerSkullFile = bst_fullfile(ProtocolInfo.SUBJECTS, InnerSkullFile);
+    Sinn = load(BSTInnerSkullFile);  
+      
+     %%
+    %% Genering outer skull file
+    %%
+    disp ("-->> Genering outer skull file");
+    OuterSkullFile = sSubject.Surface(sSubject.iOuterSkull).FileName;
+    BSTOuterSkullFile = bst_fullfile(ProtocolInfo.SUBJECTS, OuterSkullFile);
+    Sout = load(BSTOuterSkullFile);  
+         
     %%
     %% Genering eeg file
     %%
@@ -78,14 +105,27 @@ function [] = export_subject_BCV_structure(selected_data_set,subID)
                 labels = hdr.label;
                 labels = strrep(labels,'REF','');
                 [Cdata] = remove_channels_from_layout(labels,Cdata);
-                save(strcat(output_subject,filesep,'eeg',filesep,'eeg.mat'),'data');
+                subject_info.eeg_dir = fullfile('eeg','eeg.mat');
+                subject_info.eeg_info_dir = fullfile('eeg','eeg_info.mat');
+                disp ("-->> Saving eeg_info file");
+                save(fullfile(output_subject_dir,'eeg','eeg_info.mat'),'hdr');
+                disp ("-->> Saving eeg file");
+                save(fullfile(output_subject_dir,'eeg','eeg.mat'),'data');
             end
         end
     end
-    
-    save(strcat(output_subject,filesep,'leadfield',filesep,'leadfield.mat'),'Ke','GridOrient','GridAtlas');
-    save(strcat(output_subject,filesep,'surf',filesep,'surf.mat'),'Sc');
-    save(strcat(output_subject,filesep,'scalp',filesep,'scalp.mat'),'Cdata','Sh');
+    disp ("-->> Saving leadfield file");
+    save(fullfile(output_subject_dir,'leadfield','leadfield.mat'),'Ke','GridOrient','GridAtlas');
+    disp ("-->> Saving surf file");
+    save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc');
+    disp ("-->> Saving scalp file");
+    save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
+    disp ("-->> Saving inner skull file");
+    save(fullfile(output_subject_dir,'scalp','innerskull.mat'),'Sinn');
+    disp ("-->> Saving outer skull file");
+    save(fullfile(output_subject_dir,'scalp','outerskull.mat'),'Sout');
+    disp ("-->> Saving subject file");
+    save(fullfile(output_subject_dir,'subject.mat'),'subject_info');
     
     % waitbar(0.25,process_waitbar,strcat('Genering eeg file for: ' , subject_name ));
     % waitbar(0.5,process_waitbar,strcat('Genering leadfield file for: ' , subject_name ));
