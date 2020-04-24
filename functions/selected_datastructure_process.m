@@ -22,15 +22,21 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             study = protocol.ProtocolStudies.Study(k);
                             if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))
                                 ChannelsFile = fullfile(protocol_data_path,study.Channel(study.iChannel).FileName);
-                                HeadModelFile = fullfile(protocol_data_path,study.HeadModel(study.iHeadModel).FileName);
+                                HeadModels = struct;
+                                for h=1: length(study.HeadModel)
+                                    HeadModelFile = fullfile(protocol_data_path,study.HeadModel(h).FileName);
+                                    HeadModel = load(HeadModelFile);
+                                    
+                                    HeadModels(h).Comment = study.HeadModel(h).Comment;
+                                    HeadModels(h).Ke = HeadModel.Gain;
+                                    HeadModels(h).GridOrient = HeadModel.GridOrient;
+                                    HeadModels(h).GridAtlas = HeadModel.GridAtlas;
+                                    
+                                end
                                 modality = char(study.Channel.Modalities);
                                 break;
                             end
                         end
-                        HeadModel = load(HeadModelFile);
-                        Ke = HeadModel.Gain;
-                        GridOrient = HeadModel.GridOrient;
-                        GridAtlas = HeadModel.GridAtlas;
                         
                         Sc = load(CortexFile);
                         
@@ -46,7 +52,21 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         subject_info = struct;
                         if(isfolder(output_subject_dir))
-                            subject_info.leadfield_dir = fullfile('leadfield','leadfield.mat');
+                            leadfield_dir = struct;
+                            for h=1:length(HeadModels)
+                                HeadModel = HeadModels(h);
+                                if(isequal(HeadModel.Comment,'Overlapping spheres'))
+                                    leadfield_dir(h).path = fullfile('leadfield','os_leadfield.mat');
+                                end
+                                if(isequal(HeadModel.Comment,'Single sphere'))
+                                    leadfield_dir(h).path = fullfile('leadfield','ss_leadfield.mat');
+                                end
+                                if(isequal(HeadModel.Comment,'OpenMEEG BEM'))
+                                    leadfield_dir(h).path = fullfile('leadfield','om_leadfield.mat');
+                                end                                
+                            end
+                            subject_info.leadfield_dir = leadfield_dir;
+                            
                             subject_info.surf_dir = fullfile('surf','surf.mat');
                             subject_info.scalp_dir = fullfile('scalp','scalp.mat');
                             subject_info.innerskull_dir = fullfile('scalp','innerskull.mat');
@@ -66,11 +86,15 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                         [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format);
                                         labels = hdr.label;
                                         labels = strrep(labels,'REF','');
-                                        disp ("-->> Removing Channels  by preprocessed EEG");
-                                        [Cdata,Ke] = remove_channels_and_leadfield_from_layout(labels,Cdata,Ke);
-                                        disp ("-->> Sorting Channels and LeadField by preprocessed EEG");
-                                        [Cdata,Ke] = sort_channels_and_leadfield_by_labels(labels,Cdata,Ke);
-                                        
+                                        for h=1:length(HeadModels)
+                                            HeadModel = HeadModels(h);
+                                            disp ("-->> Removing Channels  by preprocessed EEG");
+                                            [Cdata_r,Ke] = remove_channels_and_leadfield_from_layout(labels,Cdata,Ke);
+                                            disp ("-->> Sorting Channels and LeadField by preprocessed EEG");
+                                            [Cdata_s,Ke] = sort_channels_and_leadfield_by_labels(labels,Cdata_r,Ke);
+                                            HeadModels(h).Ke = Ke;
+                                        end
+                                        Cdata = Cdata_s;
                                         subject_info.eeg_dir = fullfile('eeg','eeg.mat');
                                         subject_info.eeg_info_dir = fullfile('eeg','eeg_info.mat');
                                         disp ("-->> Saving eeg_info file");
@@ -88,11 +112,15 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                         label = meg.data.label;
                                         cfg = meg.data.cfg;
                                         %                 labels = strrep(labels,'REF','');
-                                        disp ("-->> Removing Channels  by preprocessed MEG");
-                                        [Cdata,Ke] = remove_channels_and_leadfield_from_layout(label,Cdata,Ke);
-                                        disp ("-->> Sorting Channels and LeadField by preprocessed MEG");
-                                        [Cdata,Ke] = sort_channels_and_leadfield_by_labels(label,Cdata,Ke);
-                                        
+                                        for h=1:length(HeadModels)
+                                            HeadModel = HeadModels(h);
+                                            disp ("-->> Removing Channels by preprocessed MEG");
+                                            [Cdata_r,Ke] = remove_channels_and_leadfield_from_layout(label,Cdata,HeadModel.Ke);
+                                            disp ("-->> Sorting Channels and LeadField by preprocessed MEG");
+                                            [Cdata_s,Ke] = sort_channels_and_leadfield_by_labels(label,Cdata_r,Ke);
+                                            HeadModels(h).Ke = Ke;
+                                        end
+                                        Cdata = Cdata_s;
                                         data = [meg.data.trial];
                                         trials = meg.data.trial;
                                         
@@ -109,8 +137,22 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                 end
                             end
                         end
-                        disp ("-->> Saving leadfield file");
-                        save(fullfile(output_subject_dir,'leadfield','leadfield.mat'),'Ke','GridOrient','GridAtlas');
+                        for h=1:length(HeadModels)
+                            Comment     = HeadModels(h).Comment;
+                            Ke          = HeadModels(h).Ke;
+                            GridOrient  = HeadModels(h).GridOrient;
+                            GridAtlas   = HeadModels(h).GridAtlas;
+                            disp ("-->> Saving leadfield file");
+                            if(isequal(Comment,'Overlapping spheres'))
+                                save(fullfile(output_subject_dir,'leadfield','os_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
+                            end
+                            if(isequal(Comment,'Single sphere'))
+                                save(fullfile(output_subject_dir,'leadfield','ss_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
+                            end
+                            if(isequal(HeadModel.Comment,'OpenMEEG BEM'))
+                                save(fullfile(output_subject_dir,'leadfield','om_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
+                            end
+                        end
                         disp ("-->> Saving surf file");
                         save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc');
                         disp ("-->> Saving scalp file");
