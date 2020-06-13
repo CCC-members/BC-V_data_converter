@@ -56,47 +56,61 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             for h=1:length(HeadModels)
                                 HeadModel = HeadModels(h);
                                 if(isequal(HeadModel.Comment,'Overlapping spheres'))
-                                    leadfield_dir(h).path = fullfile('leadfield','os_leadfield.mat');
+                                    dir = replace(fullfile('leadfield','os_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dir;
                                 end
                                 if(isequal(HeadModel.Comment,'Single sphere'))
-                                    leadfield_dir(h).path = fullfile('leadfield','ss_leadfield.mat');
+                                    dir = replace(fullfile('leadfield','ss_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dir;
                                 end
                                 if(isequal(HeadModel.Comment,'OpenMEEG BEM'))
-                                    leadfield_dir(h).path = fullfile('leadfield','om_leadfield.mat');
-                                end                                
+                                    dir = replace(fullfile('leadfield','om_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dir;
+                                end
                             end
                             subject_info.leadfield_dir = leadfield_dir;
-                            
-                            subject_info.surf_dir = fullfile('surf','surf.mat');
-                            subject_info.scalp_dir = fullfile('scalp','scalp.mat');
-                            subject_info.innerskull_dir = fullfile('scalp','innerskull.mat');
-                            subject_info.outerskull_dir = fullfile('scalp','outerskull.mat');
+                            dir = replace(fullfile('surf','surf.mat'),'\','/');
+                            subject_info.surf_dir = dir;
+                            dir = replace(fullfile('scalp','scalp.mat'),'\','/');
+                            subject_info.scalp_dir = dir;
+                            dir = replace(fullfile('scalp','innerskull.mat'),'\','/');
+                            subject_info.innerskull_dir = dir;
+                            dir = replace(fullfile('scalp','outerskull.mat'),'\','/');
+                            subject_info.outerskull_dir = dir;
                             subject_info.modality = modality;
                             subject_info.name = subject.Name;
                         end
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
+                                name = replace(subject.Name,'MC0000','CBM00');
+                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',name);
+                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',name);
                                 data_file = fullfile(base_path,filepath);
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
                                         disp ("-->> Genering eeg file");
                                         [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format);
+                                        if(~isequal(selected_data_format.preprocessed_data.label_file,"none"))
+                                            user_labels = jsondecode(fileread(selected_data_format.preprocessed_data.label_file));
+                                            disp ("-->> Cleanning EEG bad Channels by user labels");
+                                            [data,hdr]  = remove_eeg_channels_by_labels(user_labels,data,hdr);
+                                        end
                                         labels = hdr.label;
                                         labels = strrep(labels,'REF','');
                                         for h=1:length(HeadModels)
                                             HeadModel = HeadModels(h);
                                             disp ("-->> Removing Channels  by preprocessed EEG");
-                                            [Cdata_r,Ke] = remove_channels_and_leadfield_from_layout(labels,Cdata,Ke);
+                                            [Cdata_r,Ke] = remove_channels_and_leadfield_from_layout(labels,Cdata,HeadModel.Ke);
                                             disp ("-->> Sorting Channels and LeadField by preprocessed EEG");
                                             [Cdata_s,Ke] = sort_channels_and_leadfield_by_labels(labels,Cdata_r,Ke);
                                             HeadModels(h).Ke = Ke;
                                         end
                                         Cdata = Cdata_s;
-                                        subject_info.eeg_dir = fullfile('eeg','eeg.mat');
-                                        subject_info.eeg_info_dir = fullfile('eeg','eeg_info.mat');
+                                        dir = replace(fullfile('eeg','eeg.mat'),'\','/');
+                                        subject_info.eeg_dir = dir;
+                                        dir = replace(fullfile('eeg','eeg_info.mat'),'\','/');
+                                        subject_info.eeg_info_dir = dir;
                                         disp ("-->> Saving eeg_info file");
                                         save(fullfile(output_subject_dir,'eeg','eeg_info.mat'),'hdr');
                                         disp ("-->> Saving eeg file");
@@ -124,9 +138,12 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                         data = [meg.data.trial];
                                         trials = meg.data.trial;
                                         
-                                        subject_info.meg_dir = fullfile('meg','meg.mat');
-                                        subject_info.meg_info_dir = fullfile('meg','meg_info.mat');
-                                        subject_info.trials_dir = fullfile('meg','trials.mat');
+                                        dir = replace(fullfile('meg','meg.mat'),'\','/');
+                                        subject_info.meg_dir = dir;
+                                        dir = replace(fullfile('meg','meg_info.mat'),'\','/');
+                                        subject_info.meg_info_dir = dir;
+                                        dir = replace(fullfile('meg','trials.mat'),'\','/');
+                                        subject_info.trials_dir = dir;
                                         disp ("-->> Saving meg_info file");
                                         save(fullfile(output_subject_dir,'meg','meg_info.mat'),'hdr','fsample','trialinfo','grad','time','label','cfg');
                                         disp ("-->> Saving meg file");
@@ -173,6 +190,8 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
     end
 elseif(isequal(selected_data_format.id,'ipd'))
     import_preprossed_data(selected_data_format);
+elseif(isequal(selected_data_format.id,'chbm_cleanning'))
+     clean_eeg_by_user_labels(selected_data_format);
 end
 
 disp("-->> Process finished....")
