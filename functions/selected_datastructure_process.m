@@ -125,9 +125,9 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
                                         disp ("-->> Genering eeg file");
-                                        [hdr, data] = import_eeg_format(data_file,selected_data_set.preprocessed_eeg.format); % Include in this function new dataset
-                                        if(~isequal(selected_data_set.process_import_channel.channel_label_file,"none"))
-                                            user_labels = jsondecode(fileread(selected_data_set.process_import_channel.channel_label_file));
+                                        [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format); % Include in this function new dataset
+                                        if(~isequal(selected_data_format.preprocessed_data.labels_file_path,"none"))
+                                            user_labels = jsondecode(fileread(selected_data_format.process_import_channel.labels_file_path));
                                             disp ("-->> Cleanning EEG bad Channels by user labels");
                                             [data,hdr]  = remove_eeg_channels_by_labels(user_labels,data,hdr);
                                         end
