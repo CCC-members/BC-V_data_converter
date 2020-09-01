@@ -8,20 +8,19 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
         if(~isempty(protocols))
             for i = 1: length(protocols)
                 if(~protocols(i).isdir)
+                    %% Uploding Subject file into BrainStorm Protocol
+                    disp('BST-P ->> Uploding Subject file into BrainStorm Protocol.');
                     protocol = load(fullfile(protocols(i).folder,protocols(i).name));
                     protocol_base_path = fileparts(protocols(i).folder);
                     protocol_data_path = protocols(i).folder;
                     protocol_anat_path = fullfile(protocol_base_path,'anat');
                     for j=1: length(protocol.ProtocolSubjects.Subject)
-                        subject = protocol.ProtocolSubjects.Subject(j);
-                        CortexFile = fullfile(protocol_anat_path, subject.Surface(subject.iCortex).FileName);
-                        ScalpFile =  fullfile(protocol_anat_path,subject.Surface(subject.iScalp).FileName);
-                        InnerSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iInnerSkull).FileName);
-                        OuterSkullFile = fullfile(protocol_anat_path,subject.Surface(subject.iOuterSkull).FileName);
+                        subject = protocol.ProtocolSubjects.Subject(j);                        
                         for k=1: length(protocol.ProtocolStudies.Study)
                             study = protocol.ProtocolStudies.Study(k);
                             if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))
                                 ChannelsFile = fullfile(protocol_data_path,study.Channel(study.iChannel).FileName);
+                                disp ("-->> Genering leadfield file");
                                 HeadModels = struct;
                                 for h=1: length(study.HeadModel)
                                     HeadModelFile = fullfile(protocol_data_path,study.HeadModel(h).FileName);
@@ -37,16 +36,53 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                 break;
                             end
                         end
+                        %%
+                        %% Genering surf file
+                        %%
+                        disp ("-->> Genering surf file");
+                        % Loadding FSAve templates
+                        FSAve_64k               = load('templates/FSAve_cortex_64k.mat');
+                        fsave_inds_template     = load('templates/FSAve_64k_8k_coregister_inds.mat');
                         
-                        Sc = load(CortexFile);
+                        % Loadding subject surfaces
+                        CortexFile64K           = fullfile(protocol_anat_path, subject.Surface(1).FileName);                        
+                        Sc64k                   = load(BSTCortexFile64K);
+                        CortexFile8K            = fullfile(protocol_anat_path, subject.Surface(2).FileName);
+                        BSTCortexFile8K         = bst_fullfile(ProtocolInfo.SUBJECTS, CortexFile8K);
+                        Sc8k                    = load(BSTCortexFile8K);
+
+                        % Finding near FSAve vertices on subject surface
+                        sub_to_FSAve = find_interpolation_vertices(Sc64k,Sc8k, fsave_inds_template);
+
                         
+                        %%
+                        %% Genering Channels file
+                        %%
+                        disp ("-->> Genering channels file");
                         Cdata = load(ChannelsFile);
                         
+                        %%
+                        %% Genering scalp file
+                        %%
+                        disp ("-->> Genering scalp file");
+                        ScalpFile               = fullfile(protocol_anat_path,subject.Surface(subject.iScalp).FileName);
                         Sh = load(ScalpFile);
                         
+                        %%
+                        %% Genering inner skull file
+                        %%
+                        disp ("-->> Genering inner skull file");
+                        InnerSkullFile          = fullfile(protocol_anat_path,subject.Surface(subject.iInnerSkull).FileName);
                         Sinn = load(InnerSkullFile);
+                        
+                        %%
+                        %% Genering outer skull file
+                        %%
+                        disp ("-->> Genering outer skull file");
+                        OuterSkullFile          = fullfile(protocol_anat_path,subject.Surface(subject.iOuterSkull).FileName);
                         Sout = load(OuterSkullFile);
                         
+                        %% Creating subject folder structure
                         disp(strcat("Saving BC-VARETA structure. Subject: ",subject.Name));
                         [output_subject_dir] = create_data_structure(selected_data_format.BCV_work_dir,subject.Name,modality);
                         
@@ -83,16 +119,15 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                name = replace(subject.Name,'MC0000','CBM00');
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',name);
+                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
+                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
                                 data_file = fullfile(base_path,filepath);
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
                                         disp ("-->> Genering eeg file");
-                                        [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format);
-                                        if(~isequal(selected_data_format.preprocessed_data.label_file,"none"))
-                                            user_labels = jsondecode(fileread(selected_data_format.preprocessed_data.label_file));
+                                        [hdr, data] = import_eeg_format(eeg_file,selected_data_set.preprocessed_eeg.format); % Include in this function new dataset
+                                        if(~isequal(selected_data_set.process_import_channel.channel_label_file,"none"))
+                                            user_labels = jsondecode(fileread(selected_data_set.process_import_channel.channel_label_file));
                                             disp ("-->> Cleanning EEG bad Channels by user labels");
                                             [data,hdr]  = remove_eeg_channels_by_labels(user_labels,data,hdr);
                                         end
@@ -171,7 +206,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             end
                         end
                         disp ("-->> Saving surf file");
-                        save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc');
+                        save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc64k','Sc8k','sub_to_FSAve');
                         disp ("-->> Saving scalp file");
                         save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
                         disp ("-->> Saving inner skull file");
