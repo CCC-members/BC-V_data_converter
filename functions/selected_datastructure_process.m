@@ -9,13 +9,16 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
             for i = 1: length(protocols)
                 if(~protocols(i).isdir)
                     %% Uploding Subject file into BrainStorm Protocol
-                    disp('BST-P ->> Uploding Subject file into BrainStorm Protocol.');
+                    disp('BST-P ->> Uploading Subject files into BrainStorm Protocol.');
+                    disp("=====================================================================");
                     protocol = load(fullfile(protocols(i).folder,protocols(i).name));
                     protocol_base_path = fileparts(protocols(i).folder);
                     protocol_data_path = protocols(i).folder;
                     protocol_anat_path = fullfile(protocol_base_path,'anat');
                     for j=1: length(protocol.ProtocolSubjects.Subject)
-                        subject = protocol.ProtocolSubjects.Subject(j);                        
+                        subject = protocol.ProtocolSubjects.Subject(j);  
+                        disp(strcat("-->> Processing subject: ",subject.Name));
+                        disp("---------------------------------------------------------------------");                                              
                         for k=1: length(protocol.ProtocolStudies.Study)
                             study = protocol.ProtocolStudies.Study(k);
                             if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))
@@ -82,7 +85,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         Sout = load(OuterSkullFile);
                         
                         %% Creating subject folder structure
-                        disp(strcat("Saving BC-VARETA structure. Subject: ",subject.Name));
+                        disp(strcat("-->> Creating subject output structure"));
                         [output_subject_dir] = create_data_structure(selected_data_format.BCV_work_dir,subject.Name,modality);
                         
                         subject_info = struct;
@@ -118,16 +121,15 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                name = replace(subject.Name,'MC0000','CBM00');
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',name);
+                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
+                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
                                 data_file = fullfile(base_path,filepath);
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
                                         disp ("-->> Genering eeg file");
                                         [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format); % Include in this function new dataset
                                         if(~isequal(selected_data_format.preprocessed_data.labels_file_path,"none"))
-                                            user_labels = jsondecode(fileread(selected_data_format.process_import_channel.labels_file_path));
+                                            user_labels = jsondecode(fileread(selected_data_format.preprocessed_data.labels_file_path));
                                             disp ("-->> Cleanning EEG bad Channels by user labels");
                                             [data,hdr]  = remove_eeg_channels_by_labels(user_labels,data,hdr);
                                         end
@@ -215,6 +217,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         save(fullfile(output_subject_dir,'scalp','outerskull.mat'),'Sout');
                         disp ("-->> Saving subject file");
                         save(fullfile(output_subject_dir,'subject.mat'),'subject_info');
+                        disp("---------------------------------------------------------------------"); 
                     end
                 end
             end
@@ -228,7 +231,5 @@ elseif(isequal(selected_data_format.id,'ipd'))
 elseif(isequal(selected_data_format.id,'chbm_cleanning'))
      clean_eeg_by_user_labels(selected_data_format);
 end
-
-disp("-->> Process finished....")
 
 end
