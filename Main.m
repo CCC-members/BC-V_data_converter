@@ -15,6 +15,7 @@ clc;
 close all;
 clear all;
 disp('-->> Starting process');
+disp("=====================================================================");
 restoredefaultpath;
 
 %%
@@ -24,6 +25,7 @@ addpath(fullfile('app'));
 %addpath(fullfile('external'));
 addpath(fullfile('functions'));
 addpath(fullfile('tools'));
+addpath(fullfile('templates'));
 % addpath(strcat('bst_lf_ppl',filesep,'guide'));
 %app_properties = jsondecode(fileread(strcat('properties',filesep,'app_properties.json')));
 app_properties = jsondecode(fileread(strcat('app',filesep,'app_properties.json')));
@@ -34,7 +36,7 @@ app_properties.selected_data_format = selected_data_structure;
 disp(strcat("-->> Name:",app_properties.generals.name));
 disp(strcat("-->> Version:",app_properties.generals.version));
 disp(strcat("-->> Version date:",app_properties.generals.version_date));
-disp("=======================================================");
+disp("=====================================================================");
 
 %% ------------ Checking MatLab compatibility ----------------
 disp('-->> Checking installed matlab version');
@@ -47,15 +49,15 @@ disp('-->> Checking project laster version');
 if(isequal(app_check_version,'updated'))
     return;
 end
+disp("=====================================================================");
+%% Process selected dataset and compute the leadfield subjects
+if(isfolder(app_properties.BCV_work_dir))
+    selected_datastructure_process(app_properties);
+else
+    fprintf(2,'\n ->> Error: The BC_VARETA_work_dir folder don''t exist\n');
+    disp("");
+    fprintf(2,char(app_properties.BCV_work_dir));
+end
 
- %% Process selected dataset and compute the leadfield subjects
- if(isfolder(app_properties.BCV_work_dir))
- selected_datastructure_process(app_properties);
- else
-     fprintf(2,'\n ->> Error: The BC_VARETA_work_dir folder don''t exist\n');
-     disp("");
-     fprintf(2,char(app_properties.BCV_work_dir));
- end
- 
- 
-    
+disp("=====================================================================");
+disp("-->> Process finished....");
