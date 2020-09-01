@@ -46,10 +46,9 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         % Loadding subject surfaces
                         CortexFile64K           = fullfile(protocol_anat_path, subject.Surface(1).FileName);                        
-                        Sc64k                   = load(BSTCortexFile64K);
+                        Sc64k                   = load(CortexFile64K);
                         CortexFile8K            = fullfile(protocol_anat_path, subject.Surface(2).FileName);
-                        BSTCortexFile8K         = bst_fullfile(ProtocolInfo.SUBJECTS, CortexFile8K);
-                        Sc8k                    = load(BSTCortexFile8K);
+                        Sc8k                    = load(CortexFile8K);
 
                         % Finding near FSAve vertices on subject surface
                         sub_to_FSAve = find_interpolation_vertices(Sc64k,Sc8k, fsave_inds_template);
@@ -92,35 +91,36 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             for h=1:length(HeadModels)
                                 HeadModel = HeadModels(h);
                                 if(isequal(HeadModel.Comment,'Overlapping spheres'))
-                                    dir = replace(fullfile('leadfield','os_leadfield.mat'),'\','/');
-                                    leadfield_dir(h).path = dir;
+                                    dirref = replace(fullfile('leadfield','os_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dirref;
                                 end
                                 if(isequal(HeadModel.Comment,'Single sphere'))
-                                    dir = replace(fullfile('leadfield','ss_leadfield.mat'),'\','/');
-                                    leadfield_dir(h).path = dir;
+                                    dirref = replace(fullfile('leadfield','ss_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dirref;
                                 end
                                 if(isequal(HeadModel.Comment,'OpenMEEG BEM'))
-                                    dir = replace(fullfile('leadfield','om_leadfield.mat'),'\','/');
-                                    leadfield_dir(h).path = dir;
+                                    dirref = replace(fullfile('leadfield','om_leadfield.mat'),'\','/');
+                                    leadfield_dir(h).path = dirref;
                                 end
                             end
                             subject_info.leadfield_dir = leadfield_dir;
-                            dir = replace(fullfile('surf','surf.mat'),'\','/');
-                            subject_info.surf_dir = dir;
-                            dir = replace(fullfile('scalp','scalp.mat'),'\','/');
-                            subject_info.scalp_dir = dir;
-                            dir = replace(fullfile('scalp','innerskull.mat'),'\','/');
-                            subject_info.innerskull_dir = dir;
-                            dir = replace(fullfile('scalp','outerskull.mat'),'\','/');
-                            subject_info.outerskull_dir = dir;
+                            dirref = replace(fullfile('surf','surf.mat'),'\','/');
+                            subject_info.surf_dir = dirref;
+                            dirref = replace(fullfile('scalp','scalp.mat'),'\','/');
+                            subject_info.scalp_dir = dirref;
+                            dirref = replace(fullfile('scalp','innerskull.mat'),'\','/');
+                            subject_info.innerskull_dir = dirref;
+                            dirref = replace(fullfile('scalp','outerskull.mat'),'\','/');
+                            subject_info.outerskull_dir = dirref;
                             subject_info.modality = modality;
                             subject_info.name = subject.Name;
                         end
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
+                                name = replace(subject.Name,'MC0000','CBM00');
+                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',name);
+                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',name);
                                 data_file = fullfile(base_path,filepath);
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
@@ -142,10 +142,10 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                             HeadModels(h).Ke = Ke;
                                         end
                                         Cdata = Cdata_s;
-                                        dir = replace(fullfile('eeg','eeg.mat'),'\','/');
-                                        subject_info.eeg_dir = dir;
-                                        dir = replace(fullfile('eeg','eeg_info.mat'),'\','/');
-                                        subject_info.eeg_info_dir = dir;
+                                        dirref = replace(fullfile('eeg','eeg.mat'),'\','/');
+                                        subject_info.eeg_dir = dirref;
+                                        dirref = replace(fullfile('eeg','eeg_info.mat'),'\','/');
+                                        subject_info.eeg_info_dir = dirref;
                                         disp ("-->> Saving eeg_info file");
                                         save(fullfile(output_subject_dir,'eeg','eeg_info.mat'),'hdr');
                                         disp ("-->> Saving eeg file");
@@ -173,12 +173,12 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                                         data = [meg.data.trial];
                                         trials = meg.data.trial;
                                         
-                                        dir = replace(fullfile('meg','meg.mat'),'\','/');
-                                        subject_info.meg_dir = dir;
-                                        dir = replace(fullfile('meg','meg_info.mat'),'\','/');
-                                        subject_info.meg_info_dir = dir;
-                                        dir = replace(fullfile('meg','trials.mat'),'\','/');
-                                        subject_info.trials_dir = dir;
+                                        dirref = replace(fullfile('meg','meg.mat'),'\','/');
+                                        subject_info.meg_dir = dirref;
+                                        dirref = replace(fullfile('meg','meg_info.mat'),'\','/');
+                                        subject_info.meg_info_dir = dirref;
+                                        dirref = replace(fullfile('meg','trials.mat'),'\','/');
+                                        subject_info.trials_dir = dirref;
                                         disp ("-->> Saving meg_info file");
                                         save(fullfile(output_subject_dir,'meg','meg_info.mat'),'hdr','fsample','trialinfo','grad','time','label','cfg');
                                         disp ("-->> Saving meg file");
