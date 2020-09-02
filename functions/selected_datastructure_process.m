@@ -121,9 +121,9 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                name = strrep(subject.Name,'sub-MC00000','sub-CBM000');
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',name);
+%                                 name = strrep(subject.Name,'sub-MC00000','sub-CBM000');
+                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
+                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
                                 data_file = fullfile(base_path,filepath);
                                 if(isfile(data_file))
                                     if(isequal(selected_data_format.modality,'EEG'))
