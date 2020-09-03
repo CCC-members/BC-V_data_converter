@@ -50,7 +50,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         % Loadding subject surfaces
                         CortexFile64K           = fullfile(protocol_anat_path, subject.Surface(1).FileName);                        
                         Sc64k                   = load(CortexFile64K);
-                        CortexFile8K            = fullfile(protocol_anat_path, subject.Surface(2).FileName);
+                        CortexFile8K            = fullfile(protocol_anat_path, subject.Surface(subject.iCortex).FileName);
                         Sc8k                    = load(CortexFile8K);
 
                         % Finding near FSAve vertices on subject surface
@@ -121,6 +121,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
+%                                 name = strrep(subject.Name,'sub-MC00000','sub-CBM000');
                                 filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
                                 base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
                                 data_file = fullfile(base_path,filepath);
