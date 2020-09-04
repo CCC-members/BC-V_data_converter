@@ -439,10 +439,10 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                 if(isequal(Comment,'Single sphere'))
                                     save(fullfile(output_subject_dir,'leadfield','ss_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
                                 end
-                                if(~isempty(strfind(Comment,'OpenMEEG BEM 5K')))
+                                if(contains(Comment,'OpenMEEG BEM 5K'))
                                     save(fullfile(output_subject_dir,'leadfield','om_leadfield_5K.mat'),'Comment','Ke','GridOrient','GridAtlas');
                                 end
-                                if(~isempty(strfind(Comment,'OpenMEEG BEM 10K')))
+                                if(contains(Comment,'OpenMEEG BEM 10K'))
                                     save(fullfile(output_subject_dir,'leadfield','om_leadfield_10K.mat'),'Comment','Ke','GridOrient','GridAtlas');
                                 end
                             end
