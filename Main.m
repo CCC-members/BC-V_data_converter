@@ -26,6 +26,7 @@ addpath(fullfile('app'));
 addpath(fullfile('functions'));
 addpath(fullfile('tools'));
 addpath(fullfile('templates'));
+addpath(genpath('plugins'));
 % addpath(strcat('bst_lf_ppl',filesep,'guide'));
 %app_properties = jsondecode(fileread(strcat('properties',filesep,'app_properties.json')));
 app_properties = jsondecode(fileread(strcat('app',filesep,'app_properties.json')));
