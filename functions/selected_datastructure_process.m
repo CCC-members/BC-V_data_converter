@@ -277,15 +277,32 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                             fsave_inds_template     = load('templates/FSAve_64k_8k_coregister_inds.mat');
                             
                             % Loadding subject surfaces
-                            CortexFile64K           = fullfile(protocol_anat_path, template.Surface(1).FileName);
-                            Sc64k                   = load(CortexFile64K);
-                            CortexFile8K            = fullfile(protocol_anat_path, template.Surface(template.iCortex).FileName);
-                            Sc8k                    = load(CortexFile8K);
+                            Sc      = struct([]);
                             
+                            count   = 1;
+                            for h=1:length(template.Surface)
+                                surface = template.Surface(h);
+                                if(isequal(surface.SurfaceType,'Cortex'))
+                                    if(isequal(template.iCortex,h))
+                                        iCortex = count;
+                                    end
+                                    CortexFile              = fullfile(protocol_anat_path, surface.FileName);
+                                    Cortex                  = load(CortexFile);
+                                    Sc(count).Comment       = Cortex.Comment;
+                                    Sc(count).Vertices      = Cortex.Vertices;
+                                    Sc(count).Faces         = Cortex.Faces;
+                                    Sc(count).VertConn      = Cortex.VertConn;
+                                    Sc(count).VertNormals   = Cortex.VertNormals;
+                                    Sc(count).Curvature     = Cortex.Curvature;
+                                    Sc(count).SulciMap      = Cortex.SulciMap;
+                                    Sc(count).Atlas         = Cortex.Atlas;
+                                    Sc(count).iAtlas        = Cortex.iAtlas;
+                                    count                   = count + 1;
+                                end
+                            end
                             % Finding near FSAve vertices on template surface
                             sub_to_FSAve = [];
-                            
-                            
+                                                       
                             %%
                             %% Genering Channels file
                             %%
@@ -349,7 +366,7 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                 dirref = replace(fullfile('scalp','outerskull.mat'),'\','/');
                                 subject_info.outerskull_dir = dirref;
                                 subject_info.modality = modality;
-                                subject_info.name = template.Name;
+                                subject_info.name = subject.name;
                             end
                             
                             if(isfield(selected_data_format, 'preprocessed_data'))
@@ -447,7 +464,7 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                 end
                             end
                             disp ("-->> Saving surf file");
-                            save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc64k','Sc8k','sub_to_FSAve');
+                            save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc','sub_to_FSAve','iCortex');
                             disp ("-->> Saving scalp file");
                             save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
                             disp ("-->> Saving inner skull file");

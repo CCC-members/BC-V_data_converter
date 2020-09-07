@@ -7,7 +7,7 @@
 % - Ariosky Areces Gonzalez
 % - Deirel Paz Linares
 %
-%    December 15, 2019
+%   December 15, 2019
 
 
 %% Preparing WorkSpace

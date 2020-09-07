@@ -20,7 +20,7 @@ if(isequal(format,'plg'))
     hdr.states_name = states_name;    
     
     %% filtring data
-    data(20:23,:) = [];    
+    data(20:end,:) = [];    
     hdr.inf_info.PLGMontage = hdr.inf_info.PLGMontage(1:19,:);
 end
 
