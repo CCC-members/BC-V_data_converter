@@ -254,6 +254,7 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                     ChannelsFile = fullfile(protocol_data_path,study.Channel(study.iChannel).FileName);
                                     disp ("-->> Genering leadfield file");
                                     HeadModels = struct;
+                                    modality = char(study.Channel.Modalities);
                                     for h=1: length(study.HeadModel)
                                         HeadModelFile = fullfile(protocol_data_path,study.HeadModel(h).FileName);
                                         HeadModel = load(HeadModelFile);
@@ -262,9 +263,14 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                         HeadModels(h).Ke = HeadModel.Gain;
                                         HeadModels(h).GridOrient = HeadModel.GridOrient;
                                         HeadModels(h).GridAtlas = HeadModel.GridAtlas;
-                                        
-                                    end
-                                    modality = char(study.Channel.Modalities);
+                                        if(~isempty(study.HeadModel(h).EEGMethod))
+                                            HeadModels(h).Method    = study.HeadModel(h).EEGMethod;
+                                        elseif(~isempty(study.HeadModel(h).MEGMethod))
+                                            HeadModels(h).Method    = study.HeadModel(h).MEGMethod;
+                                        else
+                                            HeadModels(h).Method    = study.HeadModel(h).ECOGMethod;
+                                        end
+                                    end                                    
                                     break;
                                 end
                             end
@@ -339,22 +345,8 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                 leadfield_dir = struct;
                                 for h=1:length(HeadModels)
                                     HeadModel = HeadModels(h);
-                                    if(isequal(HeadModel.Comment,'Overlapping spheres'))
-                                        dirref = replace(fullfile('leadfield','os_leadfield.mat'),'\','/');
-                                        leadfield_dir(h).path = dirref;
-                                    end
-                                    if(isequal(HeadModel.Comment,'Single sphere'))
-                                        dirref = replace(fullfile('leadfield','ss_leadfield.mat'),'\','/');
-                                        leadfield_dir(h).path = dirref;
-                                    end
-                                    if(~isempty(strfind(HeadModel.Comment,'OpenMEEG BEM 5K')))
-                                        dirref = replace(fullfile('leadfield','om_leadfield_5K.mat'),'\','/');
-                                        leadfield_dir(h).path = dirref;
-                                    end 
-                                    if(~isempty(strfind(HeadModel.Comment,'OpenMEEG BEM 10K')))
-                                        dirref = replace(fullfile('leadfield','om_leadfield_10K.mat'),'\','/');
-                                        leadfield_dir(h).path = dirref;
-                                    end 
+                                    dirref = replace(fullfile('leadfield',strcat(HeadModel.Comment,'.mat')),'\','/');
+                                    leadfield_dir(h).path = dirref;
                                 end
                                 subject_info.leadfield_dir = leadfield_dir;
                                 dirref = replace(fullfile('surf','surf.mat'),'\','/');
@@ -446,22 +438,12 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                             end
                             for h=1:length(HeadModels)
                                 Comment     = HeadModels(h).Comment;
+                                Method     = HeadModels(h).Method;
                                 Ke          = HeadModels(h).Ke;
                                 GridOrient  = HeadModels(h).GridOrient;
                                 GridAtlas   = HeadModels(h).GridAtlas;
                                 disp ("-->> Saving leadfield file");
-                                if(isequal(Comment,'Overlapping spheres'))
-                                    save(fullfile(output_subject_dir,'leadfield','os_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
-                                end
-                                if(isequal(Comment,'Single sphere'))
-                                    save(fullfile(output_subject_dir,'leadfield','ss_leadfield.mat'),'Comment','Ke','GridOrient','GridAtlas');
-                                end
-                                if(contains(Comment,'OpenMEEG BEM 5K'))
-                                    save(fullfile(output_subject_dir,'leadfield','om_leadfield_5K.mat'),'Comment','Ke','GridOrient','GridAtlas');
-                                end
-                                if(contains(Comment,'OpenMEEG BEM 10K'))
-                                    save(fullfile(output_subject_dir,'leadfield','om_leadfield_10K.mat'),'Comment','Ke','GridOrient','GridAtlas');
-                                end
+                                save(fullfile(output_subject_dir,'leadfield',strcat(Comment,'.mat')),'Comment','Method','Ke','GridOrient','GridAtlas');
                             end
                             disp ("-->> Saving surf file");
                             save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc','sub_to_FSAve','iCortex');
