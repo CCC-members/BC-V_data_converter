@@ -2,7 +2,7 @@ function [vertices_interp] = find_interpolation_vertices(Sc64k,Sc8k, fsave_inds_
 
 subject_inds            = get_inds_co_registration(Sc64k,Sc8k);
 vertices_interp  = zeros(length(subject_inds),3);
-
+fprintf(1,'-->> Finding vertices interpolation: %3d%%\n',0);
 for i=1:length(fsave_inds_template.ind)    
     % Checking    
     pivot_ind       = fsave_inds_template.ind(i);
@@ -38,7 +38,8 @@ for i=1:length(fsave_inds_template.ind)
         ind_vert3 = find(subject_inds==neigh_inter(3));
         selected_vertices = [ind_vert1 ind_vert2 ind_vert3];               
     end
-    vertices_interp(i,:) = selected_vertices;     
+    vertices_interp(i,:) = selected_vertices;    
+    fprintf(1,'\b\b\b\b%3.0f%%',(i)/(length(fsave_inds_template.ind))*100);
 end
 % 
 % fig = figure;
