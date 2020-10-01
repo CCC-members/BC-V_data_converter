@@ -142,7 +142,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         if(isfield(selected_data_format, 'preprocessed_data'))
                             if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-%                                                                 name = strrep(subject.Name,'sub-MC00000','sub-CBM000');
+%                                                                 subject.Name = strrep(subject.Name,'sub-MC00000','sub-CBM000');
                                 filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
                                 base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
                                 data_file = fullfile(base_path,filepath);
@@ -255,9 +255,16 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                     protocol_data_path = protocols(i).folder;
                     protocol_anat_path = fullfile(protocol_base_path,'anat');
                     for j=1: length(protocol.ProtocolSubjects.Subject)
-                        template = protocol.ProtocolSubjects.Subject(j);
+                        template = protocol.ProtocolSubjects.Subject(j); 
+                        if(isfield(selected_data_format,"subject_name") && ~isempty(selected_data_format.subject_name) ...
+                                && ~isequal(selected_data_format.subject_name,"none"))
+                            if(~isequal(template.Name,selected_data_format.subject_name))
+                                continue;
+                            end
+                        end
                         prepro_data_paths = dir(strrep(selected_data_format.preprocessed_data.base_path,'SubID',''));
-                        for m=3:length(prepro_data_paths)
+                        prepro_data_paths(ismember( {prepro_data_paths.name}, {'.', '..'})) = [];  %remove . and ..
+                        for m=1:length(prepro_data_paths)
                             subject = prepro_data_paths(m);                            
                             disp(strcat("-->> Processing subject: ",subject.name));
                             disp("---------------------------------------------------------------------");
@@ -283,9 +290,15 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                         else
                                             HeadModels(h).Method    = study.HeadModel(h).ECOGMethod;
                                         end
-                                    end                                    
+                                    end 
+                                    jump = false;
                                     break;
                                 end
+                                jump = true;
+                                
+                            end
+                            if(jump)
+                                break;
                             end
                             %%
                             %% Genering surf file
