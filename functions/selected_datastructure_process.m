@@ -21,18 +21,25 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         disp("---------------------------------------------------------------------");
                         for k=1: length(protocol.ProtocolStudies.Study)
                             study = protocol.ProtocolStudies.Study(k);
-                            if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))
+                            if(isempty(sStudy.iChannel))
+                                sStudy.iChannel = 1;
+                            end
+                            if(isequal(fileparts(study.BrainStormSubject),subject.Name) && ~isempty(study.iChannel) && ~isempty(study.iHeadModel))                               
                                 ChannelsFile = fullfile(protocol_data_path,study.Channel(study.iChannel).FileName);
                                 disp ("-->> Genering leadfield file");
                                 HeadModels = struct;
+                                iHeadModel = sStudy.iHeadModel;
                                 for h=1: length(study.HeadModel)
-                                    HeadModelFile = fullfile(protocol_data_path,study.HeadModel(h).FileName);
-                                    HeadModel = load(HeadModelFile);
+                                    HeadModelFile               = fullfile(protocol_data_path,study.HeadModel(h).FileName);
+                                    HeadModel                   = load(HeadModelFile);
                                     
-                                    HeadModels(h).Comment = study.HeadModel(h).Comment;
-                                    HeadModels(h).Ke = HeadModel.Gain;
-                                    HeadModels(h).GridOrient = HeadModel.GridOrient;
-                                    HeadModels(h).GridAtlas = HeadModel.GridAtlas;
+                                    HeadModels(h).Comment       = HeadModel.Comment;
+                                    HeadModels(h).Ke            = HeadModel.Gain;
+                                    HeadModels(h).HeadModelType = HeadModel.HeadModelType;
+                                    HeadModels(h).GridOrient    = HeadModel.GridOrient;
+                                    HeadModels(h).GridAtlas     = HeadModel.GridAtlas;
+                                    HeadModels(h).History       = HeadModel.History;
+                                    
                                     if(~isempty(study.HeadModel(h).EEGMethod))
                                         HeadModels(h).Method    = study.HeadModel(h).EEGMethod;
                                     elseif(~isempty(study.HeadModel(h).MEGMethod))
@@ -124,7 +131,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             leadfield_dir = struct;
                             for h=1:length(HeadModels)
                                 HeadModel = HeadModels(h);
-                                dirref = replace(fullfile('leadfield',strcat(HeadModel.Comment,'.mat')),'\','/');
+                                dirref = replace(fullfile('leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(HeadModel.History{1}))),'.mat')),'\','/');
                                 leadfield_dir(h).path = dirref;
                             end
                             subject_info.leadfield_dir = leadfield_dir;
@@ -213,13 +220,16 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                             end
                         end
                         for h=1:length(HeadModels)
-                            Comment     = HeadModels(h).Comment;
-                            Method      = HeadModels(h).Method;
-                            Ke          = HeadModels(h).Ke;
-                            GridOrient  = HeadModels(h).GridOrient;
-                            GridAtlas   = HeadModels(h).GridAtlas;
+                            HeadModel   = HeadModels(h);
+                            Comment     = HeadModel.Comment;
+                            Method      = HeadModel.Method;
+                            Ke          = HeadModel.Ke;
+                            GridOrient  = HeadModel.GridOrient;
+                            GridAtlas   = HeadModel.GridAtlas;
+                            History     = HeadModel.History;
                             disp ("-->> Saving leadfield file");
-                            save(fullfile(output_subject_dir,'leadfield',strcat(Comment,'.mat')),'Comment','Method','Ke','GridOrient','GridAtlas');
+                            save(fullfile(output_subject_dir,'leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(History{1}))),'.mat')),...
+                                'Comment','Method','Ke','GridOrient','GridAtlas','iHeadModel','History');
                         end
                         disp ("-->> Saving surf file");
                         save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc','sub_to_FSAve','iCortex');
