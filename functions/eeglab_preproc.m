@@ -106,7 +106,7 @@ end
 %% Step 5: Filtering the data at 0Hz and 45 Hz.
 EEG = pop_eegfiltnew(EEG, 'locutoff', 0, 'hicutoff',max_freq, 'filtorder', 3300);
 
-% %% Step 6: Import channel info.
+%% Step 6: Import channel info.
 EEG = pop_chanedit(EEG, 'lookup',fullfile(eeglab_path,'plugins/dipfit3.4/standard_BEM/elec/standard_1005.elc'),'eval','chans = pop_chancenter( chans, [],[]);');
 clear_ind = [];
 for i=1:length(new_labels)
