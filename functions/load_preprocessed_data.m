@@ -1,6 +1,6 @@
 function [subject_info, HeadModels, Cdata] = load_preprocessed_data(subject_info,selected_data_format,output_subject_dir,data_file,HeadModels,Cdata)
 if(isequal(subject_info.modality,'EEG'))
-    MEEG = import_eeg_format(subject_info, selected_data_set, data_file);
+    MEEG = import_eeg_format(subject_info, selected_data_format, data_file);
     [Cdata, HeadModels] = filter_structural_result_by_preproc_data(MEEG.labels, Cdata, HeadModels);
 else
     MEEG = import_meg_format(subject_info, selected_data_format, data_file);
