@@ -5,10 +5,14 @@ if(~isequal(selected_data_set.preprocessed_data.labels_file_path,"none"))
 end
 if(selected_data_set.preprocessed_data.clean_data.run)    
     if(isequal(lower(selected_data_set.preprocessed_data.clean_data.toolbox),'eeglab'))
-        toolbox_path = selected_data_set.preprocessed_data.clean_data.toolbox_path;        
+        toolbox_path = selected_data_set.preprocessed_data.clean_data.toolbox_path;
         max_freq     = selected_data_set.preprocessed_data.clean_data.max_freq;
-%         save_path    = fullfile(selected_data_set.report_output_path,'Reports',selected_data_set.protocol_name,subject_info.name,'EEGLab_preproc');
-        EEG          = eeglab_preproc(subject_info.name, base_path, data_type, toolbox_path, 'verbosity', false, 'max_freq', max_freq, 'labels', user_labels);
+        %         save_path    = fullfile(selected_data_set.report_output_path,'Reports',selected_data_set.protocol_name,subject_info.name,'EEGLab_preproc');
+        if(exist('user_labels','var'))
+            EEG          = eeglab_preproc(subject_info.name, base_path, data_type, toolbox_path, 'verbosity', false, 'max_freq', max_freq, 'labels', user_labels);
+        else
+            EEG          = eeglab_preproc(subject_info.name, base_path, data_type, toolbox_path, 'verbosity', false, 'max_freq', max_freq);
+        end
         EEG.labels   = {EEG.chanlocs(:).labels};
     end
 else
