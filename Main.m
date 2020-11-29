@@ -1,3 +1,4 @@
+function Main(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%         Import BrainStrom Protocol to BC-VARETA Format
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,10 +14,25 @@
 %% Preparing WorkSpace
 clc;
 close all;
-clear all;
+clearvars -except varargin;
 disp('-->> Starting process');
 disp("=====================================================================");
-restoredefaultpath;
+%restoredefaultpath;
+
+
+if(isequal(nargin,2))
+    idnode = varargin{1};
+    count_node = varargin{2};
+    if(~isnumeric(idnode) || ~isnumeric(count_node))
+        fprintf(2,"\n ->> Error: The selected node and count of nodes have to be numbers \n");
+        return;
+    end
+else
+    idnode = 1;
+    count_node = 1;
+end
+disp(strcat("-->> Working in instance: ",num2str(idnode)));
+disp('---------------------------------------------------------------------');
 
 %%
 %------------ Preparing properties --------------------
@@ -29,7 +45,7 @@ addpath(fullfile('templates'));
 addpath(genpath('plugins'));
 % addpath(strcat('bst_lf_ppl',filesep,'guide'));
 app_properties = jsondecode(fileread(fullfile('app','app_properties.json')));
- %% Printing data information
+%% Printing data information
 disp(strcat("-->> Name:",app_properties.generals.name));
 disp(strcat("-->> Version:",app_properties.generals.version));
 disp(strcat("-->> Version date:",app_properties.generals.version_date));
@@ -43,8 +59,8 @@ if(isfile(fullfile("dataset_properties",app_properties.selected_data_format.file
         fprintf(2,"\n ->> Error: The selected_data_format file in config_protocols do not have a correct format \n");
         disp('-->> Process stoped!!!');
         return;
-    end   
-      
+    end
+    
     %% ------------ Checking MatLab compatibility ----------------
     disp('-->> Checking installed matlab version');
     if(~app_check_matlab_version())
@@ -59,7 +75,7 @@ if(isfile(fullfile("dataset_properties",app_properties.selected_data_format.file
     disp("=====================================================================");
     %% Process selected dataset and compute the leadfield subjects
     if(isfolder(app_properties.BCV_work_dir))
-        selected_datastructure_process(app_properties);
+        selected_datastructure_process(app_properties,idnode,count_node);
     else
         fprintf(2,'\n ->> Error: The BC_VARETA_work_dir folder don''t exist\n');
         disp("");
@@ -72,4 +88,5 @@ else
     fprintf(2,strcat("\n ->> Error: The file ",app_properties.selected_data_format.file_name," do not exit \n"));
     disp("______________________________________________________________________________________________");
     disp("Please configure app_properties.selected_data_format.file_name element in app\\app_properties file. ")
+end
 end
