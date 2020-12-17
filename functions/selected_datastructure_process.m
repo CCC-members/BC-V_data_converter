@@ -354,7 +354,6 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
         disp('No one protocol in this foldes:');
         disp('C:\Users\Ariosky\.brainstorm\local_db');
     end
-end
 elseif(isequal(selected_data_format.id,'ipd'))
     import_preprossed_data(selected_data_format);
     elseif(isequal(selected_data_format.id,'chbm_cleanning'))

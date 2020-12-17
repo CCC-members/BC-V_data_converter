@@ -13,9 +13,8 @@ else
     filename = varargin{1};
     [pathname, filename, extname] = fileparts(filename);
 end
-pathname = [pathname '\'];
 % Read PLG
-[pat_info inf_info plg_info mrk_info win_info cdc_info] = plg2matlab([pathname filename]);
+[pat_info inf_info plg_info mrk_info win_info cdc_info] = plg2matlab(fullfile(pathname, filename));
 data = plg_info.data;
 % Check PLG data
 if isempty(plg_info)
