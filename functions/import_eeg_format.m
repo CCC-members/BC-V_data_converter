@@ -1,8 +1,8 @@
 function EEG = import_eeg_format(subject_info, selected_data_set, base_path)
 
 data_type    = selected_data_set.preprocessed_data.format;
-if(~isequal(selected_data_set.preprocessed_data.labels_file_path,"none"))
-    user_labels = jsondecode(fileread(selected_data_set.preprocessed_data.labels_file_path));    
+if(~isequal(selected_data_set.preprocessed_data.channel_label_file,"none"))
+    user_labels = jsondecode(fileread(selected_data_set.preprocessed_data.channel_label_file));    
 end
 if(selected_data_set.preprocessed_data.clean_data.run)    
     if(isequal(lower(selected_data_set.preprocessed_data.clean_data.toolbox),'eeglab'))

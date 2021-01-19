@@ -4,7 +4,13 @@ labels      = {EEG.chanlocs.labels}';
 from        = 1;
 limit       = size(data,1);
 while(from <= limit)
-    pos = find(strcmpi(labels(from), user_labels), 1);
+    if(ischar(labels(from)))
+        label = labels(from);
+    end
+    if(iscell(labels(from)))
+        label = labels{from};
+    end
+    pos = find(strcmpi(label, user_labels), 1);
     if (isempty(pos))
         data(from,:)    = [];
         labels(from)    = [];

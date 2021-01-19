@@ -79,7 +79,8 @@ if(isfile(fullfile("dataset_properties",app_properties.selected_data_format.file
     else
         fprintf(2,'\n ->> Error: The BC_VARETA_work_dir folder don''t exist\n');
         disp("");
-        fprintf(2,char(app_properties.BCV_work_dir));
+        fprintf(2,strcat(app_properties.BCV_work_dir,'\n'));
+        
     end
     
     disp("=====================================================================");

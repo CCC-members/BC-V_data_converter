@@ -67,14 +67,25 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         subject = protocol.ProtocolSubjects.Subject(j);
                         disp(strcat("-->> Processing subject: ",subject.Name));
                         disp("---------------------------------------------------------------------");
+                                                
                         for k=1: length(protocol.ProtocolStudies.Study)
                             sStudy = protocol.ProtocolStudies.Study(k);
                             if(isempty(sStudy.iChannel))
                                 sStudy.iChannel = 1;
                             end
                             if(isequal(fileparts(sStudy.BrainStormSubject),subject.Name) && ~isempty(sStudy.iChannel) && ~isempty(sStudy.iHeadModel))
+                                
                                 ChannelsFile = fullfile(protocol_data_path,sStudy.Channel(sStudy.iChannel).FileName);
-                                disp ("-->> Genering leadfield file");
+                                %%
+                                %% Genering Channels file
+                                %%
+                                disp ("-->> Genering channels file");
+                                Cdata = load(ChannelsFile);
+                                
+                                %%
+                                %% Genering Headmodel files
+                                %%
+                                disp ("-->> Genering Headmodel files");
                                 [HeadModels,iHeadModel,modality] = get_headmodels(protocol_data_path,sStudy);
                                 break;
                             end
@@ -98,13 +109,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         
                         % Loadding subject surfaces
                         [Sc,iCortex] = get_surfaces(protocol_anat_path,subject);
-                        
-                        %%
-                        %% Genering Channels file
-                        %%
-                        disp ("-->> Genering channels file");
-                        Cdata = load(ChannelsFile);
-                        
+                                                                        
                         %%
                         %% Genering scalp file
                         %%
