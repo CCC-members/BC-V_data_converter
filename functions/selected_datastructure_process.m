@@ -1,7 +1,7 @@
 function selected_datastructure_process(app_properties,varargin)
-selected_data_format = app_properties.selected_data_format;
-selected_data_format.BCV_work_dir = app_properties.BCV_work_dir;
-if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_properties(selected_data_format) )
+selected_data_set = app_properties.selected_data_set;
+selected_data_set.BCV_work_dir = app_properties.BCV_work_dir;
+if(isequal(selected_data_set.id,'BrainStorm') && is_checked_datastructure_properties(selected_data_set) )
     if(isequal(nargin,3))
         idnode = varargin{1};
         count_node = varargin{2};
@@ -16,7 +16,7 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
     disp(strcat("-->> Working in instance: ",num2str(idnode)));
     disp('---------------------------------------------------------------------');
     
-    bst_db_path = selected_data_format.bst_db_path;
+    bst_db_path = selected_data_set.bst_db_path;
     protocols = dir(fullfile(bst_db_path,'**','protocol.mat'));
     if(isfolder(bst_db_path))
         if(length(protocols)< idnode)
@@ -129,66 +129,103 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
                         %%
                         disp ("-->> Genering outer skull file");
                         OuterSkullFile          = fullfile(protocol_anat_path,subject.Surface(subject.iOuterSkull).FileName);
-                        Sout = load(OuterSkullFile);
+                        Sout = load(OuterSkullFile);                        
                         
-                        %% Creating subject folder structure
-                        disp(strcat("-->> Creating subject output structure"));
-                        [output_subject_dir] = create_data_structure(selected_data_format.BCV_work_dir,subject.Name);
-                        
-                        subject_info = struct;
-                        if(isfolder(output_subject_dir))
-                            leadfield_dir = struct;
-                            for h=1:length(HeadModels)
-                                HeadModel = HeadModels(h);
-                                dirref = replace(fullfile('leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(HeadModel.History{1}))),'.mat')),'\','/');
-                                leadfield_dir(h).path = dirref;
-                            end
-                            subject_info.name = subject.Name;
-                            subject_info.modality = modality;
-                            subject_info.leadfield_dir = leadfield_dir;
-                            dirref = replace(fullfile('surf','surf.mat'),'\','/');
-                            subject_info.surf_dir = dirref;
-                            dirref = replace(fullfile('scalp','scalp.mat'),'\','/');
-                            subject_info.scalp_dir = dirref;
-                            dirref = replace(fullfile('scalp','innerskull.mat'),'\','/');
-                            subject_info.innerskull_dir = dirref;
-                            dirref = replace(fullfile('scalp','outerskull.mat'),'\','/');
-                            subject_info.outerskull_dir = dirref;
-                        end
-                        if(isfield(selected_data_format, 'preprocessed_data'))
-                            if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.Name);
-                                base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.Name);
-                                data_file = fullfile(base_path,filepath);
-                                if(isfile(data_file))
-                                    disp ("-->> Genering MEG/EEG file");
-                                    [subject_info,HeadModels,Cdata] = load_preprocessed_data(subject_info,selected_data_format,output_subject_dir,data_file,HeadModels,Cdata);
+                        %%
+                        %% Genering MEG/EEG file
+                        %%
+                        if(isfield(selected_data_set, 'preprocessed_data'))
+                            if(~isequal(selected_data_set.preprocessed_data.base_path,'none'))
+                                files_location = selected_data_set.preprocessed_data.file_location;
+                                base_path =  strrep(selected_data_set.preprocessed_data.base_path,'SubID',subject.Name);
+                                if(iscell(files_location))
+                                    for k=1:length(files_location)
+                                        file_location = files_location{k};
+                                        filepath = strrep(file_location,'SubID',subject.Name);
+                                        data_file = fullfile(base_path,filepath);
+                                        if(isfile(data_file))
+                                            disp ("-->> Genering MEG/EEG file");
+                                            [HeadModels,Cdata, MEEGs] = load_preprocessed_data(modality,subject.Name,selected_data_set,data_file,HeadModels,Cdata);
+                                            break;
+                                        end
+                                    end
+                                else                                    
+                                    filepath = strrep(selected_data_set.preprocessed_data.file_location,'SubID',subject.Name);
+                                    data_file = fullfile(base_path,filepath);
+                                    if(isfile(data_file))
+                                        disp ("-->> Genering MEG/EEG file");
+                                        [HeadModels,Cdata, MEEGs] = load_preprocessed_data(modality,subject.Name,selected_data_set,data_file,HeadModels,Cdata);
+                                    end
                                 end
                             end
                         end
-                        for h=1:length(HeadModels)
-                            HeadModel   = HeadModels(h);
-                            Comment     = HeadModel.Comment;
-                            Method      = HeadModel.Method;
-                            Ke          = HeadModel.Ke;
-                            GridOrient  = HeadModel.GridOrient;
-                            GridAtlas   = HeadModel.GridAtlas;
-                            History     = HeadModel.History;
-                            disp ("-->> Saving leadfield file");
-                            save(fullfile(output_subject_dir,'leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(History{1}))),'.mat')),...
-                                'Comment','Method','Ke','GridOrient','GridAtlas','iHeadModel','History');
+                        
+                        %%
+                        %% Creating structure for each selected event
+                        %%
+                        if(~exist('MEEGs','var') || isempty(MEEGs))
+                            MEEGs = struct;
+                            MEEGs.subID = subject.Name;
                         end
-                        disp ("-->> Saving surf file");
-                        save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc','sub_to_FSAve','iCortex');
-                        disp ("-->> Saving scalp file");
-                        save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
-                        disp ("-->> Saving inner skull file");
-                        save(fullfile(output_subject_dir,'scalp','innerskull.mat'),'Sinn');
-                        disp ("-->> Saving outer skull file");
-                        save(fullfile(output_subject_dir,'scalp','outerskull.mat'),'Sout');
-                        disp ("-->> Saving subject file");
-                        save(fullfile(output_subject_dir,'subject.mat'),'subject_info');
-                        disp("---------------------------------------------------------------------");
+                        for m=1:length(MEEGs)
+                            MEEG = MEEGs(m);
+                            % Creating subject folder structure
+                            disp(strcat("-->> Creating subject output structure"));
+                            [output_subject_dir] = create_data_structure(selected_data_set.BCV_work_dir,MEEG.subID);
+                            
+                            subject_info = struct;
+                            if(isfolder(output_subject_dir))
+                                leadfield_dir = struct;
+                                for h=1:length(HeadModels)
+                                    HeadModel = HeadModels(h);
+                                    dirref = replace(fullfile('leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(HeadModel.History{1}))),'.mat')),'\','/');
+                                    leadfield_dir(h).path = dirref;
+                                end
+                                subject_info.name = MEEG.subID;
+                                subject_info.modality = modality;
+                                subject_info.leadfield_dir = leadfield_dir;
+                                dirref = replace(fullfile('surf','surf.mat'),'\','/');
+                                subject_info.surf_dir = dirref;
+                                dirref = replace(fullfile('scalp','scalp.mat'),'\','/');
+                                subject_info.scalp_dir = dirref;
+                                dirref = replace(fullfile('scalp','innerskull.mat'),'\','/');
+                                subject_info.innerskull_dir = dirref;
+                                dirref = replace(fullfile('scalp','outerskull.mat'),'\','/');
+                                subject_info.outerskull_dir = dirref;
+                            end
+                            
+                            if(isfield(MEEG,'data'))
+                                dirref = replace(fullfile('meeg','meeg.mat'),'\','/');
+                                subject_info.meeg_dir = dirref;
+                                disp ("-->> Saving MEEG file");
+                                save(fullfile(output_subject_dir,'meeg','meeg.mat'),'MEEG');
+                            end
+                            
+                            % Saving subject files
+                            for h=1:length(HeadModels)
+                                HeadModel   = HeadModels(h);
+                                Comment     = HeadModel.Comment;
+                                Method      = HeadModel.Method;
+                                Ke          = HeadModel.Ke;
+                                GridOrient  = HeadModel.GridOrient;
+                                GridAtlas   = HeadModel.GridAtlas;
+                                History     = HeadModel.History;
+                                disp ("-->> Saving leadfield file");
+                                save(fullfile(output_subject_dir,'leadfield',strcat(HeadModel.Comment,'_',num2str(posixtime(datetime(History{1}))),'.mat')),...
+                                    'Comment','Method','Ke','GridOrient','GridAtlas','iHeadModel','History');
+                            end
+                            disp ("-->> Saving surf file");
+                            save(fullfile(output_subject_dir,'surf','surf.mat'),'Sc','sub_to_FSAve','iCortex');
+                            disp ("-->> Saving scalp file");
+                            save(fullfile(output_subject_dir,'scalp','scalp.mat'),'Cdata','Sh');
+                            disp ("-->> Saving inner skull file");
+                            save(fullfile(output_subject_dir,'scalp','innerskull.mat'),'Sinn');
+                            disp ("-->> Saving outer skull file");
+                            save(fullfile(output_subject_dir,'scalp','outerskull.mat'),'Sout');
+                            disp ("-->> Saving subject file");
+                            save(fullfile(output_subject_dir,'subject.mat'),'subject_info');
+                            disp("---------------------------------------------------------------------");
+                        end
                     end
                 end
             end
@@ -197,8 +234,8 @@ if(isequal(selected_data_format.id,'BrainStorm') && is_checked_datastructure_pro
             disp('C:\Users\Ariosky\.brainstorm\local_db');
         end
     end
-elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datastructure_properties(selected_data_format) )
-    template_path = selected_data_format.template_path;
+elseif(isequal(selected_data_set.id,'BrainStormTemplate') && is_checked_datastructure_properties(selected_data_set) )
+    template_path = selected_data_set.template_path;
     if(isfolder(template_path))
         protocols = dir(fullfile(template_path,'**','protocol.mat'));
         if(~isempty(protocols))
@@ -213,13 +250,13 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                     protocol_anat_path = fullfile(protocol_base_path,'anat');
                     for j=1: length(protocol.ProtocolSubjects.Subject)
                         template = protocol.ProtocolSubjects.Subject(j);
-                        if(isfield(selected_data_format,"subject_name") && ~isempty(selected_data_format.subject_name) ...
-                                && ~isequal(selected_data_format.subject_name,"none"))
-                            if(~isequal(template.Name,selected_data_format.subject_name))
+                        if(isfield(selected_data_set,"subject_name") && ~isempty(selected_data_set.subject_name) ...
+                                && ~isequal(selected_data_set.subject_name,"none"))
+                            if(~isequal(template.Name,selected_data_set.subject_name))
                                 continue;
                             end
                         end
-                        prepro_data_paths = dir(strrep(selected_data_format.preprocessed_data.base_path,'SubID',''));
+                        prepro_data_paths = dir(strrep(selected_data_set.preprocessed_data.base_path,'SubID',''));
                         prepro_data_paths(ismember( {prepro_data_paths.name}, {'.', '..'})) = [];  %remove . and ..
                         for m=1:length(prepro_data_paths)
                             subject = prepro_data_paths(m);
@@ -294,7 +331,7 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                             
                             %% Creating template subject structure
                             disp(strcat("-->> Creating template output structure"));
-                            [output_subject_dir] = create_data_structure(selected_data_format.BCV_work_dir,subject.name);
+                            [output_subject_dir] = create_data_structure(selected_data_set.BCV_work_dir,subject.name);
                             
                             subject_info = struct;
                             if(isfolder(output_subject_dir))
@@ -316,14 +353,14 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
                                 subject_info.modality = modality;
                                 subject_info.name = subject.name;
                             end
-                            if(isfield(selected_data_format, 'preprocessed_data'))
-                                if(~isequal(selected_data_format.preprocessed_data.base_path,'none'))
-                                    filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject.name);
-                                    base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject.name);
+                            if(isfield(selected_data_set, 'preprocessed_data'))
+                                if(~isequal(selected_data_set.preprocessed_data.base_path,'none'))
+                                    filepath = strrep(selected_data_set.preprocessed_data.file_location,'SubID',subject.name);
+                                    base_path =  strrep(selected_data_set.preprocessed_data.base_path,'SubID',subject.name);
                                     data_file = fullfile(base_path,filepath);
                                     if(isfile(data_file))
                                         disp ("-->> Genering MEG/EEG file");
-                                        [subject_info,HeadModels,Cdata] = load_preprocessed_data(subject_info,selected_data_format,output_subject_dir,data_file,HeadModels,Cdata);
+                                        [subject_info,HeadModels,Cdata] = load_preprocessed_data(subject_info,selected_data_set,output_subject_dir,data_file,HeadModels,Cdata);
                                     end
                                 end
                             end
@@ -359,10 +396,10 @@ elseif(isequal(selected_data_format.id,'BrainStormTemplate') && is_checked_datas
         disp('No one protocol in this foldes:');
         disp('C:\Users\Ariosky\.brainstorm\local_db');
     end
-elseif(isequal(selected_data_format.id,'ipd'))
-    import_preprossed_data(selected_data_format);
-    elseif(isequal(selected_data_format.id,'chbm_cleanning'))
-        clean_eeg_by_user_labels(selected_data_format);
+elseif(isequal(selected_data_set.id,'ipd'))
+    import_preprossed_data(selected_data_set);
+    elseif(isequal(selected_data_set.id,'chbm_cleanning'))
+        clean_eeg_by_user_labels(selected_data_set);
 end
 
 end
