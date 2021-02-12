@@ -15,10 +15,10 @@ switch data_type
 end
 MEG.data = MEG_file.data.trial;
 MEG.labels = strrep(labels,'REF','');
-MEG.srate = hdr.samples(1);
-if(~isequal(selected_data_set.process_import_channel.channel_label_file,"none"))
-    user_labels = jsondecode(fileread(selected_data_set.process_import_channel.channel_label_file));
-    disp ("-->> Cleanning EEG bad Channels by user labels");
-    MEG  = remove_eeg_channels_by_labels(user_labels,MEG);
-end
+% MEG.srate = hdr.samples(1);
+% if(~isequal(selected_data_set.process_import_channel.channel_label_file,"none"))
+%     user_labels = jsondecode(fileread(selected_data_set.process_import_channel.channel_label_file));
+%     disp ("-->> Cleanning EEG bad Channels by user labels");
+%     MEG  = remove_eeg_channels_by_labels(user_labels,MEG);
+% end
 end

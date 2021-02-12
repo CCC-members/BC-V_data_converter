@@ -88,36 +88,47 @@ switch lower(data_type)
     case 'dat'
         EEG         = pop_loadBCI2000(file_name);
     case 'plg'
-        try
-            EEG         = readplot_plg(fullfile(file_name));
-        catch
-            EEGs = [];
-            return;
-        end
+        EEG         = readplot_plg(fullfile(base_path));
         template    = load('templates/EEG_template.mat');
-        chanlocs    = template.EEG.chanlocs;        
         load('templates/labels_nomenclature.mat');
-        orig_labels = labels_match(:,1);  
-        if(size(EEG.data,1)<length(template.EEG.chanlocs))
-          chanlocs(size(EEG.data,1)+1:end,:) = [];  
-        end
-        chan_count = 1;
-        for i=1:length(labels_match)
-            label_pos = find(strcmp({EEG.chanlocs.labels},num2str(orig_labels{i})),1);
-            if(~isempty(label_pos))
-                chanlocs(chan_count).labels = labels_match{label_pos,2};
-                chan_count = chan_count + 1;
+        orig_labels = labels_match(:,1);
+        for i=1:length(orig_labels)
+            label = orig_labels{i};
+            pos = find(strcmp({EEG.chanlocs.labels},num2str(label)),1);
+            if(~isempty(pos))
+                EEG.chanlocs(pos).labels = labels_match{i,2};
             end
-        end 
-        EEG.chanlocs = chanlocs;
+        end
+        chan_row    = template.EEG.chanlocs(1);
+        labels      = EEG.chanlocs;
+        for i=1:length(labels)
+            chan_row.labels = labels(i).labels;
+            new_chanlocs(i) = chan_row;
+        end
+        EEG.chanlocs = new_chanlocs;
         EEG.chaninfo = template.EEG.chaninfo;
     case 'edf'
-        EEG = pop_biosig(file_name);
+        EEG                     = pop_biosig(file_name);
         % For cuban dataset
-        new_labels = replace({EEG.chanlocs.labels}','-REF','');
-        [EEG.chanlocs.labels] = new_labels{:};
-        new_labels = replace({EEG.chanlocs.labels}',' ','');
-        [EEG.chanlocs.labels] = new_labels{:};
+        new_labels              = replace({EEG.chanlocs.labels}','-REF','');
+        [EEG.chanlocs.labels]   = new_labels{:};
+        new_labels              = replace({EEG.chanlocs.labels}',' ','');
+        [EEG.chanlocs.labels]   = new_labels{:};
+    case 'txt'
+        load('templates/EEG_template.mat');
+        [filepath,filename,~]   = fileparts(file_name);
+        EEG.filename            = filename;
+        EEG.filepath            = filepath;
+        EEG.subject             = subID;
+        data                    = readmatrix(file_name);
+        data                    = data';
+        EEG.data                = data;
+        EEG.nbchan              = length(EEG.chanlocs);
+        EEG.pnts                = size(data,2);
+        EEG.srate               = 200;
+        EEG.min                 = 0;
+        EEG.max                 = EEG.xmin+(EEG.pnts-1)*(1/EEG.srate);
+        EEG.times               = (0:EEG.pnts-1)/EEG.srate.*1000;
 end
 EEG.setname     = subID;
 EEG.subID       = subID;
