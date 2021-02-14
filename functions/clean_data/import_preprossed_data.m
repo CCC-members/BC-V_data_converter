@@ -1,5 +1,5 @@
-function [] = import_preprossed_data(selected_data_format)
-root_path = selected_data_format.BCV_work_dir;
+function [] = import_preprossed_data(selected_data_set)
+root_path = selected_data_set.BCV_work_dir;
 subjects = dir(fullfile(root_path,'**','subject.mat'));
 if(~isempty(subjects))
     for i=1:length(subjects)
@@ -15,13 +15,13 @@ if(~isempty(subjects))
         Sh = scalp.Sh;
         
         %% Finding the preprocessed data
-        filepath = strrep(selected_data_format.preprocessed_data.file_location,'SubID',subject_info.name);
-        base_path =  strrep(selected_data_format.preprocessed_data.base_path,'SubID',subject_info.name);
+        filepath = strrep(selected_data_set.preprocessed_data.file_location,'SubID',subject_info.name);
+        base_path =  strrep(selected_data_set.preprocessed_data.base_path,'SubID',subject_info.name);
         data_file = fullfile(base_path,filepath);
         if(isfile(data_file))
             if(isequal(subject_info.modality,'EEG'))
                 disp ("-->> Genering data file");
-                [hdr, data] = import_eeg_format(data_file,selected_data_format.preprocessed_data.format);
+                [hdr, data] = import_eeg_format(data_file,selected_data_set.preprocessed_data.format);
                 labels = hdr.label;
                 labels = strrep(labels,'REF','');
                 disp ("-->> Removing Channels  by preprocessed EEG");

@@ -1,5 +1,5 @@
-function [] = clean_eeg_by_user_labels(selected_data_format)
-root_path = selected_data_format.BCV_work_dir;
+function [] = clean_eeg_by_user_labels(selected_data_set)
+root_path = selected_data_set.BCV_work_dir;
 subjects = dir(fullfile(root_path,'**','subject.mat'));
 if(~isempty(subjects))
     for i=1:length(subjects)
@@ -9,7 +9,7 @@ if(~isempty(subjects))
         output_subject_dir = subject_file_info.folder;      
                 
         %% Finding the labels file
-        labels_file = fullfile(selected_data_format.labels_file_path);
+        labels_file = fullfile(selected_data_set.channel_label_file);
         if(isfile(labels_file))
             labels = jsondecode(fileread(labels_file));
             if(isequal(subject_info.modality,'EEG'))

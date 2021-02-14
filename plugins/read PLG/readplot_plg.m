@@ -14,10 +14,10 @@ else
 end
 pathname = [pathname '\'];
 if(strcmp(extname,'xml'))
-    [pat_info inf_info plg_info mrk_info win_info cdc_info states_name] = plg_read([pathname filename]);
+    [pat_info inf_info plg_info mrk_info win_info cdc_info states_name] = plg_read(fullfile(pathname, filename));
 else
 % Read PLG
-    [pat_info inf_info plg_info mrk_info win_info cdc_info states_name] = plg2matlab([pathname filename]);
+    [pat_info inf_info plg_info mrk_info win_info cdc_info states_name] = plg2matlab(fullfile(pathname, filename));
 end
 data = plg_info.data;
 % Check PLG data
