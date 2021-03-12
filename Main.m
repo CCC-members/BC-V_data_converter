@@ -38,6 +38,7 @@ disp('---------------------------------------------------------------------');
 %------------ Preparing properties --------------------
 % brainstorm('stop');
 addpath(fullfile('app'));
+addpath(fullfile('config_labels'));
 addpath(fullfile('dataset_properties'));
 addpath(genpath(fullfile('functions')));
 addpath(fullfile('tools'));

@@ -54,7 +54,7 @@ if(isequal(selected_data_set.id,'BrainStorm') && is_checked_datastructure_proper
         protocols = protocols([start_ind:end_ind]);
         
         if(~isempty(protocols))
-            for i = 38: length(protocols)
+            for i = 1: length(protocols)
                 if(~protocols(i).isdir)
                     %% Uploding Subject file into BrainStorm Protocol
                     disp('BST-P ->> Uploading Subject files into BrainStorm Protocol.');
